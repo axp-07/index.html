@@ -1055,34 +1055,122 @@
   </footer>
 
   <script>
-    // Nav scroll effect
+    // ── Custom Cursor ──
+    const cursorDot = document.createElement('div');
+    const cursorRing = document.createElement('div');
+    cursorDot.id = 'cur-dot';
+    cursorRing.id = 'cur-ring';
+    Object.assign(cursorDot.style, {
+      position:'fixed', width:'8px', height:'8px', background:'var(--accent)',
+      borderRadius:'50%', pointerEvents:'none', zIndex:'9999',
+      transform:'translate(-50%,-50%)', transition:'transform 0.1s, background 0.2s',
+      top:'0', left:'0'
+    });
+    Object.assign(cursorRing.style, {
+      position:'fixed', width:'32px', height:'32px',
+      border:'2px solid var(--accent)', borderRadius:'50%',
+      pointerEvents:'none', zIndex:'9998',
+      transform:'translate(-50%,-50%)',
+      top:'0', left:'0', opacity:'0.5',
+      transition:'width 0.3s, height 0.3s, opacity 0.3s, border-color 0.2s'
+    });
+    document.body.appendChild(cursorDot);
+    document.body.appendChild(cursorRing);
+    document.body.style.cursor = 'none';
+
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      cursorDot.style.left = mx + 'px';
+      cursorDot.style.top = my + 'px';
+    });
+    function animCursor() {
+      rx += (mx - rx) * 0.13;
+      ry += (my - ry) * 0.13;
+      cursorRing.style.left = rx + 'px';
+      cursorRing.style.top = ry + 'px';
+      requestAnimationFrame(animCursor);
+    }
+    animCursor();
+
+    document.querySelectorAll('a, button, .pill, .skill-card, .project-card, .exp-card, .cert-card').forEach(el => {
+      el.style.cursor = 'none';
+      el.addEventListener('mouseenter', () => {
+        cursorDot.style.transform = 'translate(-50%,-50%) scale(2.5)';
+        cursorDot.style.background = 'var(--accent2)';
+        cursorRing.style.width = '48px';
+        cursorRing.style.height = '48px';
+        cursorRing.style.opacity = '0.3';
+        cursorRing.style.borderColor = 'var(--accent2)';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursorDot.style.transform = 'translate(-50%,-50%) scale(1)';
+        cursorDot.style.background = 'var(--accent)';
+        cursorRing.style.width = '32px';
+        cursorRing.style.height = '32px';
+        cursorRing.style.opacity = '0.5';
+        cursorRing.style.borderColor = 'var(--accent)';
+      });
+    });
+
+    // ── Nav scroll effect ──
     const navbar = document.getElementById('navbar');
     window.addEventListener('scroll', () => {
       navbar.classList.toggle('scrolled', window.scrollY > 20);
     });
 
-    // Active nav link
+    // ── Active nav link ──
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-links a:not(.nav-cta)');
     window.addEventListener('scroll', () => {
       let current = '';
       sections.forEach(s => { if (window.scrollY >= s.offsetTop - 120) current = s.id; });
       navLinks.forEach(a => {
-        a.style.color = a.getAttribute('href') === '#' + current ? 'var(--ink)' : '';
-        a.style.fontWeight = a.getAttribute('href') === '#' + current ? '600' : '';
+        const active = a.getAttribute('href') === '#' + current;
+        a.style.color = active ? 'var(--ink)' : '';
+        a.style.fontWeight = active ? '600' : '';
       });
     });
 
-    // Scroll reveal
-    const allReveals = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .stagger');
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add('in'); observer.unobserve(e.target); }
-      });
-    }, { threshold: 0.12 });
-    allReveals.forEach(el => observer.observe(el));
+    // ── Scroll Reveal ──
+    // First make all elements visible with initial state
+    const revealEls = document.querySelectorAll('.reveal, .reveal-left, .reveal-right');
+    const staggerEls = document.querySelectorAll('.stagger');
 
-    // Form submit
+    const revealObserver = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+    const staggerObserver = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          staggerObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
+
+    revealEls.forEach(el => revealObserver.observe(el));
+    staggerEls.forEach(el => staggerObserver.observe(el));
+
+    // ── Trigger reveals already in view on load ──
+    window.addEventListener('load', () => {
+      revealEls.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) el.classList.add('in');
+      });
+      staggerEls.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) el.classList.add('in');
+      });
+    });
+
+    // ── Form submit ──
     function handleSubmit(e) {
       e.preventDefault();
       document.getElementById('success-msg').style.display = 'block';
@@ -1090,12 +1178,6 @@
       document.getElementById('femail').value = '';
       document.getElementById('fmsg').value = '';
     }
-
-    // Pill hover ripple
-    document.querySelectorAll('.pill').forEach(pill => {
-      pill.addEventListener('mouseenter', function() { this.style.transform = 'scale(1.08)'; });
-      pill.addEventListener('mouseleave', function() { this.style.transform = ''; });
-    });
   </script>
 </body>
 </html>
